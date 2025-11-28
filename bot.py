@@ -145,7 +145,6 @@ def main():
         ApplicationBuilder()
         .token(Config.BOT_TOKEN)
         .request(request)
-        .get_updates_http_version("1.1")
         .build()
     )
 
