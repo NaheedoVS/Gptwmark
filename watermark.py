@@ -8,17 +8,19 @@ def add_watermark(input_path: str, output_path: str, text: str = "Your Watermark
         if not os.path.exists(input_path):
             return False
 
-        # Проверяем, есть ли аудио — если нет, отключаем его в выходном файле
+        # Check for audio stream
         probe = ffmpeg.probe(input_path)
         has_audio = any(stream['codec_type'] == 'audio' for stream in probe['streams'])
 
         stream = ffmpeg.input(input_path)
 
-        # Текст в правом нижнем углу
+        # Text watermark applied using the drawtext filter
+        # *** FIX IMPLEMENTED: Using relative path to the font in the repo ***
         video = stream.video.filter(
             'drawtext',
             text=text,
-            fontfile='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',  # точно есть в buildpack
+            # This path assumes 'watermark_font.ttf' is in the root directory.
+            fontfile='watermark_font.ttf',  
             fontsize=font_size,
             fontcolor=color,
             x='w-tw-10',
@@ -28,12 +30,15 @@ def add_watermark(input_path: str, output_path: str, text: str = "Your Watermark
             shadowcolor='black@0.5',
             escape_text=False
         )
+        # End of FIX
 
         if has_audio:
+            # Output with audio
             output = ffmpeg.output(stream.audio, video, output_path, 
                                  vcodec='libx264', acodec='aac', 
                                  preset='medium', crf=23)
         else:
+            # Output without audio
             output = ffmpeg.output(video, output_path, 
                                  vcodec='libx264', preset='medium', crf=23)
 
