@@ -22,10 +22,10 @@ async def download_file(file_path):
 tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
 download_url = f"[https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}](https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path})"
 async with aiohttp.ClientSession() as session:
-async with session.get(download_url) as resp:
-if resp.status == 200:
-with open(tmp_file.name, "wb") as f:
-f.write(await resp.read())
+    async with session.get(download_url) as resp:
+        if resp.status == 200:
+            with open(tmp_file.name, "wb") as f:
+                f.write(await resp.read())
 else:
 raise RuntimeError("Failed to download video")
 return tmp_file.name
