@@ -1,4 +1,29 @@
 # watermark.py
+# In watermark.py
+
+def add_watermark(...):
+    try:
+        if not os.path.exists(input_path):
+            return False
+
+        # === DIAGNOSTIC CHECK ADDED HERE ===
+        FONT_PATH = '/app/watermark_font.ttf'
+        if not os.path.exists(FONT_PATH):
+            print(f"!!! FATAL ERROR: Font file NOT found at {FONT_PATH}")
+            return False
+        # === END DIAGNOSTIC CHECK ===
+
+        # Check for audio stream...
+        stream = ffmpeg.input(input_path)
+
+        # Text watermark applied using the drawtext filter
+        video = stream.video.filter(
+            'drawtext',
+            text=text,
+            fontfile=FONT_PATH,  # Use the constant path
+            # ... rest of parameters ...
+        )
+# ...
 import ffmpeg
 import os
 
