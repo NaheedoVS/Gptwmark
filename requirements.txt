@@ -4,4 +4,6 @@ Pillow==10.1.0
 python-dotenv==1.0.0
 aiogram==3.0.0b7
 aiohttp
+moviepy
+imageio-ffmpeg
 
