@@ -8,14 +8,10 @@ def add_watermark(input_path: str, output_path: str, text: str = "Your Watermark
         if not os.path.exists(input_path):
             return False
 
-        # Define the absolute font path
-        FONT_PATH = '/app/watermark_font.ttf'
+        # NOTE: This simple filename relies on the FONTCONFIG_PATH environment variable 
+        # being set to /app on Heroku to find the watermark_font.ttf file.
+        FONT_FILENAME = 'watermark_font.ttf' 
 
-        # Optional Diagnostic Check (Keep this to confirm the file is now found)
-        if not os.path.exists(FONT_PATH):
-            print(f"!!! FATAL ERROR: Font file NOT found at {FONT_PATH}")
-            return False
-        
         # Check for audio stream
         probe = ffmpeg.probe(input_path)
         has_audio = any(stream['codec_type'] == 'audio' for stream in probe['streams'])
@@ -26,7 +22,7 @@ def add_watermark(input_path: str, output_path: str, text: str = "Your Watermark
         video = stream.video.filter(
             'drawtext',
             text=text,
-            fontfile=FONT_PATH,  # Use the absolute path variable
+            fontfile=FONT_FILENAME,  # Simple filename path
             fontsize=font_size,
             fontcolor=color,
             x='w-tw-10',
