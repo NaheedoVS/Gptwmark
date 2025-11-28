@@ -1,73 +1,47 @@
-import ffmpeg
 import os
-import logging
-from PIL import Image, ImageDraw, ImageFont
-from config import Config
+import subprocess
 
-logger = logging.getLogger(__name__)
+def add_watermark(input_path, output_path, text="Watermark", color="white", font_size=24):
+    """
+    Add centered text watermark to a video using FFmpeg.
 
+    Args:
+        input_path (str): path to input video
+        output_path (str): path to output video
+        text (str): watermark text
+        color (str): 'white' or 'black'
+        font_size (int): font size
+    Returns:
+        bool: True if video generated successfully
+    """
+    # Use DejaVuSans font bundled with FFmpeg on Heroku
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
-def create_text_watermark(text: str, output_path: str, color_rgb: tuple):
-    try:
-        font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    if not os.path.exists(font_path):
+        raise FileNotFoundError("Font file not found. Make sure DejaVuSans is installed.")
 
-        try:
-            font = ImageFont.truetype(font_path, Config.FONT_SIZE)
-        except:
-            font = ImageFont.load_default()
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-i", input_path,
+        "-vf", f"drawtext=fontfile={font_path}:text='{text}':x=(w-text_w)/2:y=(h-text_h)/2:fontsize={font_size}:fontcolor={color}",
+        "-c:v", "libx264",
+        "-preset", "veryfast",
+        "-crf", "23",
+        "-c:a", "aac",
+        output_path
+    ]
 
-        dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
-        bbox = dummy_draw.textbbox((0, 0), text, font=font)
-        w = bbox[2] - bbox[0]
-        h = bbox[3] - bbox[1]
+    process = subprocess.run(cmd, capture_output=True, text=True)
 
-        img = Image.new("RGBA", (w + 30, h + 30), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(img)
-
-        final_color = color_rgb + (Config.OPACITY,)
-        draw.text((15, 15), text, font=font, fill=final_color)
-
-        img.save(output_path, "PNG")
-        return True
-    except Exception as e:
-        logger.error(f"Watermark error: {e}")
+    if process.returncode != 0:
+        print("FFmpeg failed:")
+        print(process.stderr)
         return False
 
-
-def process_video_streaming(file_url: str, watermark_img: str, output_dir: str):
-    try:
-        output_pattern = os.path.join(output_dir, "part_%03d.mp4")
-
-        (
-            ffmpeg
-            .input(file_url)
-            .overlay(
-                ffmpeg.input(watermark_img),
-                x=f"main_w-overlay_w-{Config.MARGIN_X}",
-                y=f"main_h-overlay_h-{Config.MARGIN_Y}"
-            )
-            .output(
-                output_pattern,
-                vcodec="libx264",
-                preset="veryfast",
-                crf=26,
-                movflags="+faststart",
-                f="segment",
-                segment_time=1800,
-                reset_timestamps=1
-            )
-            .run(capture_stdout=True, capture_stderr=True)
-        )
-
-        parts = [
-            os.path.join(output_dir, f)
-            for f in sorted(os.listdir(output_dir))
-            if f.startswith("part_")
-        ]
-
-        return parts
-
-    except ffmpeg.Error as e:
-        logger.error(e.stderr.decode())
-        return []
-      
+    if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+        return True
+    else:
+        print("Output file invalid")
+        return False
+        
