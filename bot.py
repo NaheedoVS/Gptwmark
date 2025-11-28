@@ -9,7 +9,7 @@ from watermark import add_watermark
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN environment variable not set")
+raise RuntimeError("BOT_TOKEN environment variable not set")
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
@@ -22,10 +22,10 @@ async def download_file(file_path):
 tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
 download_url = f"[https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}](https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path})"
 async with aiohttp.ClientSession() as session:
-    async with session.get(download_url) as resp:
-        if resp.status == 200:
-            with open(tmp_file.name, "wb") as f:
-                f.write(await resp.read())
+async with session.get(download_url) as resp:
+if resp.status == 200:
+with open(tmp_file.name, "wb") as f:
+f.write(await resp.read())
 else:
 raise RuntimeError("Failed to download video")
 return tmp_file.name
@@ -51,10 +51,14 @@ await status.edit_text("✅ Watermark added. Uploading video...")
 await message.reply_video(FSInputFile(tmp_out.name), supports_streaming=True, caption="Here’s your watermarked video!")
 
 # Clean temp files
-try: os.unlink(input_path)
-except: pass
-try: os.unlink(tmp_out.name)
-except: pass
+try:
+    os.unlink(input_path)
+except:
+    pass
+try:
+    os.unlink(tmp_out.name)
+except:
+    pass
 ```
 
 async def handle_queue(user_id: int):
