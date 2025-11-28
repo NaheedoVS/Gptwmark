@@ -9,7 +9,7 @@ from watermark import add_watermark
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
-raise RuntimeError("BOT_TOKEN environment variable not set")
+    raise RuntimeError("BOT_TOKEN environment variable not set")
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
