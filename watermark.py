@@ -1,47 +1,48 @@
+# watermark.py
+import ffmpeg
 import os
-import subprocess
 
-def add_watermark(input_path, output_path, text="Watermark", color="white", font_size=24):
-    """
-    Add centered text watermark to a video using FFmpeg.
+def add_watermark(input_path: str, output_path: str, text: str = "Your Watermark", 
+                  color: str = "white", font_size: int = 36) -> bool:
+    try:
+        if not os.path.exists(input_path):
+            return False
 
-    Args:
-        input_path (str): path to input video
-        output_path (str): path to output video
-        text (str): watermark text
-        color (str): 'white' or 'black'
-        font_size (int): font size
-    Returns:
-        bool: True if video generated successfully
-    """
-    # Use DejaVuSans font bundled with FFmpeg on Heroku
-    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+        # Проверяем, есть ли аудио — если нет, отключаем его в выходном файле
+        probe = ffmpeg.probe(input_path)
+        has_audio = any(stream['codec_type'] == 'audio' for stream in probe['streams'])
 
-    if not os.path.exists(font_path):
-        raise FileNotFoundError("Font file not found. Make sure DejaVuSans is installed.")
+        stream = ffmpeg.input(input_path)
 
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-i", input_path,
-        "-vf", f"drawtext=fontfile={font_path}:text='{text}':x=(w-text_w)/2:y=(h-text_h)/2:fontsize={font_size}:fontcolor={color}",
-        "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-crf", "23",
-        "-c:a", "aac",
-        output_path
-    ]
+        # Текст в правом нижнем углу
+        video = stream.video.filter(
+            'drawtext',
+            text=text,
+            fontfile='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',  # точно есть в buildpack
+            fontsize=font_size,
+            fontcolor=color,
+            x='w-tw-10',
+            y='h-th-10',
+            shadowx=2,
+            shadowy=2,
+            shadowcolor='black@0.5',
+            escape_text=False
+        )
 
-    process = subprocess.run(cmd, capture_output=True, text=True)
+        if has_audio:
+            output = ffmpeg.output(stream.audio, video, output_path, 
+                                 vcodec='libx264', acodec='aac', 
+                                 preset='medium', crf=23)
+        else:
+            output = ffmpeg.output(video, output_path, 
+                                 vcodec='libx264', preset='medium', crf=23)
 
-    if process.returncode != 0:
-        print("FFmpeg failed:")
-        print(process.stderr)
-        return False
-
-    if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+        ffmpeg.run(output, overwrite_output=True, quiet=True)
         return True
-    else:
-        print("Output file invalid")
+
+    except ffmpeg.Error as e:
+        print("FFmpeg error:", e.stderr.decode() if e.stderr else e)
         return False
-        
+    except Exception as e:
+        print("Watermark error:", e)
+        return False
