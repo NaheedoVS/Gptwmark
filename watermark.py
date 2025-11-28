@@ -15,12 +15,12 @@ def add_watermark(input_path: str, output_path: str, text: str = "Your Watermark
         stream = ffmpeg.input(input_path)
 
         # Text watermark applied using the drawtext filter
-        # *** FIX IMPLEMENTED: Using relative path to the font in the repo ***
+        # *** DEFINITIVE FIX: Using the absolute /app path ***
         video = stream.video.filter(
             'drawtext',
             text=text,
-            # This path assumes 'watermark_font.ttf' is in the root directory.
-            fontfile='watermark_font.ttf',  
+            # This path works because Heroku's build process copies all repo files to the /app directory.
+            fontfile='/app/watermark_font.ttf',  # <-- This is the corrected, absolute path
             fontsize=font_size,
             fontcolor=color,
             x='w-tw-10',
@@ -30,15 +30,13 @@ def add_watermark(input_path: str, output_path: str, text: str = "Your Watermark
             shadowcolor='black@0.5',
             escape_text=False
         )
-        # End of FIX
-
+        
+        # Determine output command based on presence of audio
         if has_audio:
-            # Output with audio
             output = ffmpeg.output(stream.audio, video, output_path, 
                                  vcodec='libx264', acodec='aac', 
                                  preset='medium', crf=23)
         else:
-            # Output without audio
             output = ffmpeg.output(video, output_path, 
                                  vcodec='libx264', preset='medium', crf=23)
 
